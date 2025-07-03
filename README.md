@@ -1,1 +1,1 @@
-# summarized-ai
+# Summarized AI
