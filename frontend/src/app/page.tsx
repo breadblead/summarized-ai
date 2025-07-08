@@ -1,9 +1,44 @@
-async function getStrapiData(url: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_STRAPI_URL!;
+import qs from "qs";
+import { HeroSection } from "@/components/custom/HeroSection";
+import { flattenAttributes } from "@/lib/utils";
+
+const homePageQuery = qs.stringify(
+  {
+    populate: {
+      blocks: {
+        on: {
+          "layout.hero-section": {
+            populate: {
+              image: {
+                fields: ["url", "alternativeText"],
+              },
+              link: {
+                populate: true,
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  { encodeValuesOnly: true }
+);
+
+async function getStrapiData(path: string) {
+  const baseUrl = "http://localhost:1337";
+
+  const url = new URL(path, baseUrl);
+  url.search = homePageQuery;
+
+  console.log(url.href);
+
   try {
-    const response = await fetch(baseUrl + url);
+    const response = await fetch(url.href, { cache: "no-store" });
     const data = await response.json();
-    return data;
+    console.dir(data, { depth: null });
+    const flattenedData = flattenAttributes(data);
+    console.dir(flattenedData, { depth: null });
+    return flattenedData;
   } catch (error) {
     console.error(error);
   }
@@ -11,11 +46,12 @@ async function getStrapiData(url: string) {
 
 export default async function Home() {
   const strapiData = await getStrapiData("/api/home-page");
-  const { title, description } = strapiData.data;
+
+  const { title, description, blocks } = strapiData;
+
   return (
-    <main className="container mx-auto py-6">
-      <h1 className="text-5x1 font-bold">{title}</h1>
-      <p className="text-xl mt-4">{description}</p>
+    <main>
+      <HeroSection data={blocks[0]} />
     </main>
   );
 }
