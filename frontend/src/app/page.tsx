@@ -43,7 +43,7 @@ async function getStrapiData(path: string) {
     console.error(error);
   }
 }
-
+// reply comment
 export default async function Home() {
   const strapiData = await getStrapiData("/api/home-page");
 
