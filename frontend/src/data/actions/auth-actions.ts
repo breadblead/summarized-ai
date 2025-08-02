@@ -14,6 +14,8 @@ const config = {
   secure: process.env.NODE_ENV === "production",
 };
 
+// ./login-action.ts
+
 const schemaRegister = z.object({
   username: z
     .string()
@@ -25,7 +27,7 @@ const schemaRegister = z.object({
     .min(6, { message: "Password must be at least 6 characters" })
     .max(100, { message: "Password must be no more than 100 characters" }),
 
-  email: z.string().email({
+  email: z.email({
     message: "Please enter a valid email address",
   }),
 });
@@ -40,12 +42,11 @@ export async function registerUserAction(prevState: any, formData: FormData) {
   if (!validatedFields.success) {
     return {
       ...prevState,
-      zodErrors: validatedFields.error.flatten().fieldErrors,
+      zodErrors: z.treeifyError,
       strapiErrors: null,
       message: "Missing Fields. Failed to Register.",
     };
   }
-
   const responseData = await registerUserService(validatedFields.data);
 
   if (!responseData) {
@@ -90,6 +91,8 @@ const schemaLogin = z.object({
       message: "Password must be between 6 and 100 characters",
     }),
 });
+
+// ./login-action.ts
 
 export async function loginUserAction(prevState: any, formData: FormData) {
   const validatedFields = schemaLogin.safeParse({
