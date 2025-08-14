@@ -1,15 +1,15 @@
 "use client";
 import React from "react";
-
 import { useActionState } from "react";
 
 import { cn } from "@/lib/utils";
+
+import { uploadProfileImageAction } from "@/data/actions/profile-actions";
+
 import { SubmitButton } from "@/components/custom/submit-button";
 import ImagePicker from "@/components/custom/image-picker";
 import { ZodErrors } from "@/components/custom/zod-errors";
 import { StrapiErrors } from "@/components/custom/strapi-errors";
-
-import { uploadProfileImageAction } from "@/data/actions/profile-actions";
 
 interface ProfileImageFormProps {
   id: string;

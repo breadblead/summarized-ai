@@ -1,6 +1,6 @@
+import qs from "qs";
 import { getAuthToken } from "./get-token";
 import { getStrapiURL } from "@/lib/utils";
-import qs from "qs";
 
 export async function getUserMeLoader() {
   const baseUrl = getStrapiURL();
