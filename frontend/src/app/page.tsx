@@ -18,5 +18,6 @@ const blockComponents = {
 function blockRenderer(block: any) {
   const Component =
     blockComponents[block.__component as keyof typeof blockComponents];
+
   return Component ? <Component key={block.id} data={block} /> : null;
 }
