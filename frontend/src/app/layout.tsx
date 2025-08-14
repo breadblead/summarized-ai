@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
 
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
@@ -29,6 +30,7 @@ export default async function RootLayout({
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
       >
+        <Toaster position="bottom-center" />
         <Header data={globalData.data.header} />
         {children}
         <Footer data={globalData.data.footer} />
