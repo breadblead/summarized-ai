@@ -62,11 +62,15 @@ export function SummaryForm() {
       return;
     }
 
+    const raw = summaryResponseData?.data as unknown;
+    const summary =
+      typeof raw === "string" ? raw : JSON.stringify(raw ?? "", null, 2);
+
     const payload = {
       data: {
         title: `Summary for video: ${processedVideoId}`,
         videoId: processedVideoId,
-        summary: summaryResponseData.data,
+        summary, // строго string
       },
     };
 

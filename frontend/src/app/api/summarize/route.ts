@@ -24,6 +24,11 @@ INSTRUCTIONS:
 async function generateSummary(content: string, template: string) {
   const prompt = PromptTemplate.fromTemplate(template);
 
+  console.log(
+    `summarize/route.ts - line: 27 ->> process.env.OPENAI_API_KEY`,
+    process.env.OPENAI_API_KEY
+  );
+
   const model = new ChatOpenAI({
     openAIApiKey: process.env.OPENAI_API_KEY,
     modelName: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
@@ -40,6 +45,9 @@ async function generateSummary(content: string, template: string) {
 
   try {
     const summary = await chain.invoke({ text: content });
+
+    console.log(`summarize/route.ts - line: 49 ->> summary`, summary);
+
     return summary;
   } catch (error) {
     if (error instanceof Error)
@@ -80,6 +88,11 @@ export async function POST(req: NextRequest) {
   try {
     const transcript = await fetch(url);
     transcriptData = await transcript.text();
+
+    console.log(
+      `summarize/route.ts - line: 84 ->> transcriptData`,
+      transcriptData
+    );
   } catch (error) {
     console.error("Error processing request:", error);
     if (error instanceof Error)
@@ -91,11 +104,15 @@ export async function POST(req: NextRequest) {
 
   try {
     summary = await generateSummary(transcriptData, TEMPLATE);
+
+    console.log(`summarize/route.ts - line: 100 ->> summary`, summary);
+
     return new Response(JSON.stringify({ data: summary, error: null }));
   } catch (error) {
     console.error("Error processing request:", error);
-    if (error instanceof Error)
+    if (error instanceof Error) {
       return new Response(JSON.stringify({ error: error.message }));
+    }
     return new Response(JSON.stringify({ error: "Error generating summary." }));
   }
 }
