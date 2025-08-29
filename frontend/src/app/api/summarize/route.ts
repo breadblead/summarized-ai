@@ -2,62 +2,105 @@ import { NextRequest } from "next/server";
 import { getUserMeLoader } from "@/data/services/get-user-me-loader";
 import { getAuthToken } from "@/data/services/get-token";
 
-import { ChatOpenAI } from "@langchain/openai";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 
+// ✅ Официальный SDK Gemini
+import { GoogleGenAI } from "@google/genai";
+
 const TEMPLATE = `
-INSTRUCTIONS: 
-  For the this {text} complete the following steps.
-  Generate the title for based on the content provided
-  Summarize the following content and include 5 key topics, writing in first person using normal tone of voice.
-  
-  Write a youtube video description
-    - Include heading and sections.  
-    - Incorporate keywords and key takeaways
-
-  Generate bulleted list of key points and benefits
-
-  Return possible and best recommended key words
+INSTRUCTIONS:
+- Detect the original language of the transcript and perform ALL steps in that same language.
+- Also output one line at the very end: "LANG:<iso_639_1_code>" (e.g., LANG:ru, LANG:en, LANG:es).
+- Generate a title based on the content.
+- Summarize the content in first person, natural tone, include 5 key topics.
+- Write a YouTube video description with headings, sections, keywords, and key takeaways.
+- Generate a bulleted list of key points and benefits.
+- Provide possible and best recommended keywords.
 `;
 
-async function generateSummary(content: string, template: string) {
+// -------------------- helpers --------------------
+function extractLangCode(s: string): string | null {
+  // Ищем "LANG:xx" (в конце или где-нибудь в тексте)
+  const m = s.match(/^\s*LANG\s*:\s*([a-z]{2})(?:-[A-Z]{2})?\s*$/im);
+  return m?.[1] ?? null; // "ru" | "en" | "es" ...
+}
+
+function stripLangTag(s: string): string {
+  return s.replace(/^\s*LANG\s*:\s*[a-z]{2}(?:-[A-Z]{2})?\s*$/gim, "").trim();
+}
+
+function chunkText(text: string, max = 8000): string[] {
+  if (text.length <= max) return [text];
+  const chunks: string[] = [];
+  for (let i = 0; i < text.length; i += max) {
+    chunks.push(text.slice(i, i + max));
+  }
+  return chunks;
+}
+
+// -------------------- Gemini: суммаризация транскрипта --------------------
+async function generateSummary(transcript: string, template: string) {
+  // Готовим system-инструкцию как отдельную часть (см. доки по contents)
   const prompt = PromptTemplate.fromTemplate(template);
+  const systemInstruction = await prompt.format({ text: "" });
 
-  console.log(
-    `summarize/route.ts - line: 27 ->> process.env.OPENAI_API_KEY`,
-    process.env.OPENAI_API_KEY
-  );
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const modelId = process.env.GEMINI_MODEL ?? "gemini-2.5-flash-lite";
 
-  const model = new ChatOpenAI({
-    openAIApiKey: process.env.OPENAI_API_KEY,
-    modelName: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-    temperature: process.env.OPENAI_TEMPERATURE
-      ? parseFloat(process.env.OPENAI_TEMPERATURE)
-      : 0.7,
-    maxTokens: process.env.OPENAI_MAX_TOKENS
-      ? parseInt(process.env.OPENAI_MAX_TOKENS)
-      : 4000,
-  });
-
-  const outputParser = new StringOutputParser();
-  const chain = prompt.pipe(model).pipe(outputParser);
+  // Если транскрипт очень большой — чанкнём и попросим собрать финальный summary
+  const chunks = chunkText(transcript, 8000);
 
   try {
-    const summary = await chain.invoke({ text: content });
+    // 1) Если один чанк — делаем прямой запрос
+    if (chunks.length === 1) {
+      const resp = await ai.models.generateContent({
+        model: modelId,
+        contents: [
+          { role: "user", parts: [{ text: systemInstruction }] },
+          { role: "user", parts: [{ text: chunks[0] }] },
+        ],
+      });
+      // В JS-квикстарте это .text (геттер) — см. официальный пример
+      const raw = (resp as any).text ?? resp.text;
+      const lang = extractLangCode(raw) ?? "en";
+      const cleaned = stripLangTag(raw);
 
-    console.log(`summarize/route.ts - line: 49 ->> summary`, summary);
+      // Парсим для совместимости с твоей схемой
+      const outputParser = new StringOutputParser();
+      const parsed = await outputParser.parse(cleaned);
 
-    return summary;
-  } catch (error) {
-    if (error instanceof Error)
-      return new Response(JSON.stringify({ error: error.message }));
-    return new Response(
-      JSON.stringify({ error: "Failed to generate summary." })
-    );
+      return { text: parsed, lang };
+    }
+
+    // 2) Если чанков несколько — отправляем их как отдельные сообщения,
+    // затем модель сама склеит итог (дешевле, чем много проходов)
+    const parts = [
+      { role: "user", parts: [{ text: systemInstruction }] } as const,
+    ];
+    for (const c of chunks) {
+      parts.push({ role: "user", parts: [{ text: c }] } as const);
+    }
+
+    const resp = await ai.models.generateContent({
+      model: modelId,
+      contents: parts as any,
+    });
+    const raw = (resp as any).text ?? resp.text;
+    const lang = extractLangCode(raw) ?? "en";
+    const cleaned = stripLangTag(raw);
+
+    const outputParser = new StringOutputParser();
+    const parsed = await outputParser.parse(cleaned);
+
+    return { text: parsed, lang };
+  } catch (error: any) {
+    const message = error?.message ?? "Failed to generate summary.";
+    return new Response(JSON.stringify({ error: message }));
   }
 }
 
+// -------------------- Твой Route Handler --------------------
 export async function POST(req: NextRequest) {
   const user = await getUserMeLoader();
   const token = await getAuthToken();
@@ -71,10 +114,7 @@ export async function POST(req: NextRequest) {
 
   if (user.data.credits < 1) {
     return new Response(
-      JSON.stringify({
-        data: null,
-        error: "Insufficient credits",
-      }),
+      JSON.stringify({ data: null, error: "Insufficient credits" }),
       { status: 402 }
     );
   }
@@ -83,36 +123,41 @@ export async function POST(req: NextRequest) {
   const videoId = body.videoId;
   const url = `https://deserving-harmony-9f5ca04daf.strapiapp.com/utilai/yt-transcript/${videoId}`;
 
-  let transcriptData;
+  let transcriptData: string;
 
   try {
     const transcript = await fetch(url);
     transcriptData = await transcript.text();
 
     console.log(
-      `summarize/route.ts - line: 84 ->> transcriptData`,
-      transcriptData
+      `summarize/route.ts - transcript length`,
+      transcriptData.length
     );
-  } catch (error) {
-    console.error("Error processing request:", error);
-    if (error instanceof Error)
-      return new Response(JSON.stringify({ error: error.message }));
-    return new Response(JSON.stringify({ error: "Unknown error" }));
+  } catch (error: any) {
+    return new Response(
+      JSON.stringify({ error: error?.message ?? "Unknown error" })
+    );
   }
 
-  let summary: Awaited<ReturnType<typeof generateSummary>>;
-
   try {
-    summary = await generateSummary(transcriptData, TEMPLATE);
+    const result = await generateSummary(transcriptData, TEMPLATE);
 
-    console.log(`summarize/route.ts - line: 100 ->> summary`, summary);
+    // Если generateSummary вернул Response (ошибка) — пробросим её как есть
+    if (result instanceof Response) return result;
 
-    return new Response(JSON.stringify({ data: summary, error: null }));
-  } catch (error) {
-    console.error("Error processing request:", error);
-    if (error instanceof Error) {
-      return new Response(JSON.stringify({ error: error.message }));
-    }
-    return new Response(JSON.stringify({ error: "Error generating summary." }));
+    // Возвращаем и текст summary, и определённый ISO-код языка — чтобы фронт/бек мог
+    // сохранить запись в Strapi под правильной локалью (locale=<lang>).
+    // Строку LANG:... мы уже вырезали.
+    return new Response(
+      JSON.stringify({
+        data: result.text,
+        locale: result.lang, // <-- используй это как locale при записи в Strapi
+        error: null,
+      })
+    );
+  } catch (error: any) {
+    return new Response(
+      JSON.stringify({ error: error?.message ?? "Error generating summary." })
+    );
   }
 }
