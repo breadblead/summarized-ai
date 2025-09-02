@@ -1,0 +1,14 @@
+
+# env files
+.env
+.env.*
+.env.local
+*.env
+
+# env files
+.env
+.env.*
+.env.local
+frontend/.env
+frontend/.env.local
+*.env
