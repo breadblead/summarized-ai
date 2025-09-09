@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 
 import { uploadProfileImageAction } from "@/data/actions/profile-actions";
 
-import { SubmitButton } from "@/components/custom/submit-button";
-import ImagePicker from "@/components/custom/image-picker";
-import { ZodErrors } from "@/components/custom/zod-errors";
-import { StrapiErrors } from "@/components/custom/strapi-errors";
+import { SubmitButton } from "@/components/custom/SubmitButton";
+import ImagePicker from "@/components/custom/ImagePicker";
+import { ZodErrors } from "@/components/custom/ZodErrors";
+import { StrapiErrors } from "@/components/custom/StrapiErrors";
 
 interface ProfileImageFormProps {
   id: string;

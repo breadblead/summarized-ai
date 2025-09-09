@@ -44,25 +44,29 @@ export function getStrapiMedia(url: string | null) {
   return `${getStrapiURL()}${url}`;
 }
 
-export function extractYouTubeID(urlOrID: string): string | null {
-  const regExpID = /^[a-zA-Z0-9_-]{11}$/;
+export function extractYouTubeID(
+  urlOrID: string | null | undefined
+): string | null {
+  if (!urlOrID) return null;
+  if (typeof urlOrID !== "string") return null;
 
-  if (regExpID.test(urlOrID)) {
-    return urlOrID;
-  }
+  const str = urlOrID.trim();
 
-  const regExpStandard = /youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/;
+  const isYouTubeID = /^[a-zA-Z0-9_-]{11}$/.test(str);
+  if (isYouTubeID) return str;
 
-  const regExpShorts = /youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/;
+  const patterns = [
+    /youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/,
+    /youtu\.be\/([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/,
+  ];
 
-  const matchStandard = urlOrID.match(regExpStandard);
-  if (matchStandard) {
-    return matchStandard[1];
-  }
-
-  const matchShorts = urlOrID.match(regExpShorts);
-  if (matchShorts) {
-    return matchShorts[1];
+  for (const pattern of patterns) {
+    const match = str.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
   }
 
   return null;

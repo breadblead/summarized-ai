@@ -3,10 +3,10 @@
 import { cn } from "@/lib/utils";
 import React from "react";
 
-import { SubmitButton } from "@/components/custom/submit-button";
+import { SubmitButton } from "@/components/custom/SubmitButton";
 import { Input } from "../ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { StrapiErrors } from "@/components/custom/strapi-errors";
+import { StrapiErrors } from "@/components/custom/StrapiErrors";
 
 import { useActionState } from "react";
 import { updateProfileAction } from "@/data/actions/profile-actions";

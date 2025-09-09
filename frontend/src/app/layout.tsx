@@ -9,31 +9,36 @@ import { getGlobalData, getGlobalPageMetadata } from "@/data/loaders";
 import { Header } from "@/components/custom/Header";
 import { Footer } from "@/components/custom/Footer";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const metadata = await getGlobalPageMetadata();
+function pick<T = any>(obj: any, key: string): T | null {
+  return obj?.[key] ?? obj?.data?.[key] ?? null;
+}
 
-  return {
-    title: metadata?.data?.title ?? "Epic Next Course",
-    description: metadata?.data?.description ?? "Epic Next Course",
-  };
+export async function generateMetadata(): Promise<Metadata> {
+  const meta = await getGlobalPageMetadata();
+
+  const title = pick<string>(meta, "title") ?? "Epic Next Course";
+  const description = pick<string>(meta, "description") ?? "Epic Next Course";
+
+  return { title, description };
 }
 
 export default async function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const globalData = await getGlobalData();
-  console.dir(globalData, { depth: null });
+}: Readonly<{ children: React.ReactNode }>) {
+  const global = await getGlobalData();
+
+  const headerData = pick(global, "header");
+  const footerData = pick(global, "footer");
+
   return (
     <html lang="en">
       <body
         className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}
       >
         <Toaster position="bottom-center" />
-        <Header data={globalData.data.header} />
+        {headerData && <Header data={headerData} />}
         {children}
-        <Footer data={globalData.data.footer} />
+        {footerData && <Footer data={footerData} />}
       </body>
     </html>
   );

@@ -15,9 +15,9 @@ import {
 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { ZodErrors } from "@/components/custom/zod-errors";
-import { StrapiErrors } from "@/components/custom/strapi-errors";
-import { SubmitButton } from "@/components/custom/submit-button";
+import { ZodErrors } from "@/components/custom/ZodErrors";
+import { StrapiErrors } from "@/components/custom/StrapiErrors";
+import { SubmitButton } from "@/components/custom/SubmitButton";
 
 const INITIAL_STATE = {
   zodErrors: null,

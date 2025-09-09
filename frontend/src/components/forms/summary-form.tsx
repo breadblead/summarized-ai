@@ -1,15 +1,12 @@
 "use client";
-
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-
 import { Input } from "@/components/ui/input";
-import { SubmitButton } from "@/components/custom/submit-button";
+import { SubmitButton } from "@/components/custom/SubmitButton";
 import { generateSummaryService } from "@/data/services/summary-service";
 import { extractYouTubeID } from "@/lib/utils";
 import { createSummaryAction } from "@/data/actions/summary-actions";
-
 interface StrapiErrorsProps {
   message: string | null;
   name: string;
@@ -28,10 +25,9 @@ export function SummaryForm() {
   async function handleFormSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
-
+    toast.success("Submitting Form");
     const formData = new FormData(event.currentTarget);
     const videoId = formData.get("videoId") as string;
-
     const processedVideoId = extractYouTubeID(videoId);
 
     if (!processedVideoId) {
@@ -47,8 +43,9 @@ export function SummaryForm() {
     }
 
     toast.success("Generating Summary");
+    const summaryResponseData = await generateSummaryService(videoId);
 
-    const summaryResponseData = await generateSummaryService(processedVideoId);
+    console.log(summaryResponseData, "Response from route handler");
 
     if (summaryResponseData.error) {
       setValue("");
@@ -62,42 +59,27 @@ export function SummaryForm() {
       return;
     }
 
-    const raw = summaryResponseData?.data as unknown;
-    const summary =
-      typeof raw === "string" ? raw : JSON.stringify(raw ?? "", null, 2);
-
     const payload = {
       data: {
         title: `Summary for video: ${processedVideoId}`,
         videoId: processedVideoId,
-        summary, // строго string
+        summary: summaryResponseData.data,
       },
     };
 
     try {
       await createSummaryAction(payload);
-      toast.success("Summary Created");
-      // Reset form after successful creation
-      setValue("");
-      setError(INITIAL_STATE);
     } catch (error) {
-      let errorMessage =
-        "An unexpected error occurred while creating the summary";
-
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === "string") {
-        errorMessage = error;
-      }
-
-      toast.error(errorMessage);
+      toast.error("Error Creating Summary");
       setError({
-        message: errorMessage,
+        ...INITIAL_STATE,
+        message: "Error Creating Summary",
         name: "Summary Error",
       });
       setLoading(false);
       return;
     }
+    toast.success("Summary Created");
     setLoading(false);
   }
 
@@ -130,7 +112,6 @@ export function SummaryForm() {
           )}
           required
         />
-
         <SubmitButton
           text="Create Summary"
           loadingText="Creating Summary"

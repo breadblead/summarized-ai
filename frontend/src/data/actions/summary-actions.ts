@@ -14,7 +14,6 @@ export async function createSummaryAction(payload: Payload) {
   const token = await getAuthToken();
   if (!token) throw new Error("No auth token found");
 
-  // 🛡️ мягко приводим к строке
   const raw = payload.data.summary;
   const summary =
     typeof raw === "string" ? raw : JSON.stringify(raw ?? "", null, 2);

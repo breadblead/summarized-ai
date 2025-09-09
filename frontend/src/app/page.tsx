@@ -5,19 +5,25 @@ import { FeatureSection } from "@/components/custom/FeaturesSection";
 export default async function Home() {
   const strapiData = await getHomePageData();
 
-  const { blocks } = strapiData?.data || [];
+  const blocks = (strapiData?.blocks ??
+    strapiData?.data?.blocks ??
+    []) as unknown as Array<any>;
 
-  return <main>{blocks.map(blockRenderer)}</main>;
+  return <main>{Array.isArray(blocks) ? blocks.map(renderBlock) : null}</main>;
 }
 
 const blockComponents = {
   "layout.hero-section": HeroSection,
   "layout.features-section": FeatureSection,
-};
+} as const;
 
-function blockRenderer(block: any) {
-  const Component =
-    blockComponents[block.__component as keyof typeof blockComponents];
+function renderBlock(block: any, index: number) {
+  const type = block.__component ?? block.component;
+  const Component = blockComponents[type as keyof typeof blockComponents];
 
-  return Component ? <Component key={block.id} data={block} /> : null;
+  if (!Component) return null;
+
+  const key = block.id ?? `${type}-${index}`;
+
+  return <Component key={key} data={block} />;
 }

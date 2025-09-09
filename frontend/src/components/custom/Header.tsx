@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Logo } from "@/components/custom/Logo";
 import { Button } from "@/components/ui/button";
 import { getUserMeLoader } from "@/data/services/get-user-me-loader";
-import { LogoutButton } from "./logout-button";
+import { LogoutButton } from "./LogoutButton";
 import { SummaryForm } from "@/components/forms/summary-form";
 
 interface HeaderProps {
