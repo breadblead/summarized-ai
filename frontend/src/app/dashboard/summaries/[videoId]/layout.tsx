@@ -48,18 +48,6 @@ export default async function SummarySingleLayout({
 
     const youtubeVideoId = extractYouTubeID(data.videoId);
 
-    if (!youtubeVideoId) {
-      return (
-        <div className="p-4">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <p className="text-yellow-600">Invalid YouTube ID format</p>
-            <p className="text-sm text-yellow-500 mt-2">ID: {data.videoId}</p>
-          </div>
-          {children}
-        </div>
-      );
-    }
-
     return (
       <div>
         <div className="h-full grid gap-4 grid-cols-5 p-4">
@@ -67,6 +55,7 @@ export default async function SummarySingleLayout({
           <div className="col-span-2">
             <div className="sticky top-4">
               <YouTubePlayerClient videoId={youtubeVideoId} />
+              {/* Убрал отладочный блок с надписью */}
             </div>
           </div>
         </div>
@@ -78,6 +67,7 @@ export default async function SummarySingleLayout({
       <div className="p-4">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
           <p className="text-red-600">Error loading summary data</p>
+          <p className="text-sm text-red-500 mt-2">Please try again later</p>
         </div>
       </div>
     );

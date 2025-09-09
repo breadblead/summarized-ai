@@ -1,5 +1,6 @@
-import { extractYouTubeID } from "@/lib/utils";
 import { getSummaryById } from "@/data/loaders";
+import { extractYouTubeID } from "@/lib/utils";
+import { SummaryCardForm } from "@/components/forms/SummaryCardForm";
 
 interface ParamsProps {
   params: Promise<{ videoId: string }>;
@@ -12,44 +13,18 @@ export default async function SummaryCardRoute({
     const awaitedParams = await params;
     const data = await getSummaryById(awaitedParams.videoId);
 
+    console.log("DATA FROM API:", data);
+    console.log("Summary field:", data?.summary);
+
     if (data?.error?.status === 404) return <p>No Items Found</p>;
     if (!data) return <p>No data available</p>;
 
-    if (!data.videoId) {
-      return <p>Video ID not available</p>;
-    }
-
-    const videoId = extractYouTubeID(data.videoId);
-
-    if (!videoId) {
-      return (
-        <div>
-          <p>Invalid video ID format</p>
-          <p className="text-sm text-gray-500">ID: {data.videoId}</p>
-        </div>
-      );
-    }
-
     return (
       <div className="p-6">
-        <h1 className="text-2xl font-bold mb-6">
-          Summary for video: {videoId}
-        </h1>
+        <h1 className="text-2xl font-bold mb-6">Video Summary</h1>
 
-        {/* Отображаем summary content */}
-        {data.summaryContent ? (
-          <div className="prose max-w-none bg-white p-6 rounded-lg shadow-md">
-            <div
-              dangerouslySetInnerHTML={{
-                __html: data.summaryContent.replace(/\n/g, "<br/>"),
-              }}
-            />
-          </div>
-        ) : (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <p className="text-yellow-600">No summary content available</p>
-          </div>
-        )}
+        {/* ✅ ДОБАВЬ ЭТУ СТРОЧКУ - форма редактирования */}
+        <SummaryCardForm item={data} />
       </div>
     );
   } catch (error) {

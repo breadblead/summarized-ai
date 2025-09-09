@@ -1,29 +1,30 @@
 "use client";
-import ReactPlayer from "react-player";
 
-function generateYouTubeUrl(videoId: string) {
-  const baseUrl = new URL("https://www.youtube.com/watch");
-  baseUrl.searchParams.append("v", videoId);
-
-  console.log("23423", baseUrl.href);
-  return baseUrl.href;
-}
 interface YouTubePlayerProps {
   videoId: string | null;
 }
+
 export default function YouTubePlayer({
   videoId,
 }: Readonly<YouTubePlayerProps>) {
-  if (!videoId) return null;
-  const videoUrl = generateYouTubeUrl(videoId);
+  if (!videoId) {
+    return (
+      <div className="relative aspect-video rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
+        <p className="text-gray-500">Video ID not provided</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative aspect-video rounded-md overflow-hidden">
-      <ReactPlayer
-        url={videoUrl}
-        width="100%"
-        height="100%"
-        controls
-        className="absolute top-0 left-0"
+    <div className="relative aspect-video rounded-md overflow-hidden bg-black shadow-lg">
+      <iframe
+        src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
+        title="YouTube video player"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowFullScreen
+        className="w-full h-full"
+        frameBorder="0"
+        loading="lazy"
       />
     </div>
   );
